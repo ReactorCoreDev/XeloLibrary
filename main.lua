@@ -1,95 +1,140 @@
+--// XeloLibrary.lua
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
 
 local XeloLibrary = {}
-local Gui = Instance.new("ScreenGui")
-Gui.Name = "XeloLibraryUI"
-Gui.ResetOnSpawn = false
-Gui.Parent = game:GetService("CoreGui")
 
-local DraggableFrame = Instance.new("Frame")
-DraggableFrame.Size = UDim2.new(0, 300, 0, 200)
-DraggableFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
-DraggableFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-DraggableFrame.BorderSizePixel = 0
-DraggableFrame.Parent = Gui
-DraggableFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-DraggableFrame.Active = true
-DraggableFrame.Draggable = true
-DraggableFrame.Name = "XeloMainFrame"
-DraggableFrame.ClipsDescendants = true
-DraggableFrame.BackgroundTransparency = 0.1
-DraggableFrame.AutomaticSize = Enum.AutomaticSize.Y
+-- Create ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "XeloClientUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game:GetService("CoreGui")
 
+-- Create Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 320, 0, 240)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -120)
+MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local FrameCorner = Instance.new("UICorner")
+FrameCorner.CornerRadius = UDim.new(0, 8)
+FrameCorner.Parent = MainFrame
+
+-- Container to place items vertically
 local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.Padding = UDim.new(0, 10)
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Parent = DraggableFrame
+UIListLayout.Parent = MainFrame
 
-function XeloLibrary:CreateButton(Data)
-    local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1, -20, 0, 30)
-    Button.Position = UDim2.new(0, 10, 0, 0)
-    Button.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Button.TextSize = 16
-    Button.Text = Data.Name or "Button"
-    Button.Font = Enum.Font.Gotham
-    Button.Parent = DraggableFrame
-    Button.BorderSizePixel = 0
+local Padding = Instance.new("UIPadding")
+Padding.PaddingTop = UDim.new(0, 12)
+Padding.Parent = MainFrame
 
-    local HoverTween = TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(80, 80, 80)})
-    local UnhoverTween = TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(55, 55, 55)})
+-- Create Toggle Function
+function XeloLibrary:CreateToggle(Config)
+	local Toggle = Instance.new("TextButton")
+	Toggle.Name = Config.Name or "Toggle"
+	Toggle.Size = UDim2.new(0, 260, 0, 40)
+	Toggle.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+	Toggle.Text = "OFF"
+	Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Toggle.Font = Enum.Font.GothamSemibold
+	Toggle.TextSize = 20
+	Toggle.AutoButtonColor = false
+	Toggle.Parent = MainFrame
 
-    Button.MouseEnter:Connect(function()
-        HoverTween:Play()
-    end)
-    Button.MouseLeave:Connect(function()
-        UnhoverTween:Play()
-    end)
+	local Corner = Instance.new("UICorner", Toggle)
+	Corner.CornerRadius = UDim.new(0, 6)
 
-    Button.MouseButton1Down:Connect(function()
-        local PressTween = TweenService:Create(Button, TweenInfo.new(0.05), {Size = UDim2.new(1, -20, 0, 28)})
-        PressTween:Play()
-    end)
-    Button.MouseButton1Up:Connect(function()
-        local ReleaseTween = TweenService:Create(Button, TweenInfo.new(0.05), {Size = UDim2.new(1, -20, 0, 30)})
-        ReleaseTween:Play()
-        if Data.Callback then
-            Data.Callback()
-        end
-    end)
+	local ToggleState = false
+	local LastToggle = 0
+
+	Toggle.MouseEnter:Connect(function()
+		TweenService:Create(Toggle, TweenInfo.new(0.1), {
+			BackgroundColor3 = ToggleState and Color3.fromRGB(0, 170, 0):Lerp(Color3.fromRGB(180, 180, 180), 0.15)
+				or Color3.fromRGB(180, 0, 0):Lerp(Color3.fromRGB(180, 180, 180), 0.15)
+		}):Play()
+	end)
+
+	Toggle.MouseLeave:Connect(function()
+		TweenService:Create(Toggle, TweenInfo.new(0.1), {
+			BackgroundColor3 = ToggleState and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(180, 0, 0)
+		}):Play()
+	end)
+
+	Toggle.MouseButton1Click:Connect(function()
+		if tick() - LastToggle < 0.2 then return end
+		LastToggle = tick()
+
+		TweenService:Create(Toggle, TweenInfo.new(0.1), {
+			Size = UDim2.new(0, 250, 0, 36)
+		}):Play()
+		task.wait(0.1)
+		TweenService:Create(Toggle, TweenInfo.new(0.1), {
+			Size = UDim2.new(0, 260, 0, 40)
+		}):Play()
+
+		ToggleState = not ToggleState
+
+		TweenService:Create(Toggle, TweenInfo.new(0.2), {
+			BackgroundColor3 = ToggleState and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(180, 0, 0)
+		}):Play()
+
+		Toggle.Text = ToggleState and "ON" or "OFF"
+		if Config.Callback then
+			task.defer(Config.Callback, ToggleState)
+		end
+	end)
 end
 
-function XeloLibrary:CreateToggle(Data)
-    local Toggle = Instance.new("TextButton")
-    Toggle.Size = UDim2.new(0, 20, 0, 20)
-    Toggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    Toggle.Text = ""
-    Toggle.BorderSizePixel = 0
-    Toggle.Parent = DraggableFrame
+-- Create Button Function (no toggle)
+function XeloLibrary:CreateButton(Config)
+	local Button = Instance.new("TextButton")
+	Button.Name = Config.Name or "Button"
+	Button.Size = UDim2.new(0, 260, 0, 40)
+	Button.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+	Button.Text = Config.Name or "Button"
+	Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	Button.Font = Enum.Font.GothamSemibold
+	Button.TextSize = 20
+	Button.AutoButtonColor = false
+	Button.Parent = MainFrame
 
-    local State = false
+	local Corner = Instance.new("UICorner", Button)
+	Corner.CornerRadius = UDim.new(0, 6)
 
-    local function UpdateColor()
-        local Color = State and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(200, 50, 50)
-        TweenService:Create(Toggle, TweenInfo.new(0.2), {BackgroundColor3 = Color}):Play()
-    end
+	Button.MouseEnter:Connect(function()
+		TweenService:Create(Button, TweenInfo.new(0.1), {
+			BackgroundColor3 = Color3.fromRGB(75, 75, 75)
+		}):Play()
+	end)
 
-    Toggle.MouseButton1Click:Connect(function()
-        if not Toggle:GetAttribute("Cooldown") then
-            Toggle:SetAttribute("Cooldown", true)
-            State = not State
-            UpdateColor()
-            if Data.Callback then
-                Data.Callback(State)
-            end
-            task.wait(0.2)
-            Toggle:SetAttribute("Cooldown", false)
-        end
-    end)
+	Button.MouseLeave:Connect(function()
+		TweenService:Create(Button, TweenInfo.new(0.1), {
+			BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+		}):Play()
+	end)
 
-    UpdateColor()
+	Button.MouseButton1Click:Connect(function()
+		TweenService:Create(Button, TweenInfo.new(0.1), {
+			Size = UDim2.new(0, 250, 0, 36)
+		}):Play()
+		task.wait(0.1)
+		TweenService:Create(Button, TweenInfo.new(0.1), {
+			Size = UDim2.new(0, 260, 0, 40)
+		}):Play()
+
+		if Config.Callback then
+			task.defer(Config.Callback)
+		end
+	end)
 end
 
 return XeloLibrary
