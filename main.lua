@@ -1,140 +1,172 @@
---// XeloLibrary.lua
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 
 local XeloLibrary = {}
+local Tabs = {}
 
--- Create ScreenGui
+-- ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "XeloClientUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game:GetService("CoreGui")
 
--- Create Main Frame
+-- Main Frame
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 320, 0, 240)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -120)
+MainFrame.Size = UDim2.new(0, 500, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
 MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
-local FrameCorner = Instance.new("UICorner")
-FrameCorner.CornerRadius = UDim.new(0, 8)
-FrameCorner.Parent = MainFrame
+local FrameCorner = Instance.new("UICorner", MainFrame)
+FrameCorner.CornerRadius = UDim.new(0, 10)
 
--- Container to place items vertically
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Padding = UDim.new(0, 10)
-UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Parent = MainFrame
+-- Header
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 70)
+Header.BackgroundTransparency = 1
+Header.Parent = MainFrame
 
-local Padding = Instance.new("UIPadding")
-Padding.PaddingTop = UDim.new(0, 12)
-Padding.Parent = MainFrame
+local HeaderImage = Instance.new("ImageLabel")
+HeaderImage.Size = UDim2.new(0, 60, 0, 60)
+HeaderImage.Position = UDim2.new(0, 10, 0.5, -30)
+HeaderImage.BackgroundTransparency = 1
+HeaderImage.Image = Players:GetUserThumbnailAsync(Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size60x60)
+HeaderImage.Parent = Header
 
--- Create Toggle Function
-function XeloLibrary:CreateToggle(Config)
-	local Toggle = Instance.new("TextButton")
-	Toggle.Name = Config.Name or "Toggle"
-	Toggle.Size = UDim2.new(0, 260, 0, 40)
-	Toggle.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
-	Toggle.Text = "OFF"
-	Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Toggle.Font = Enum.Font.GothamSemibold
-	Toggle.TextSize = 20
-	Toggle.AutoButtonColor = false
-	Toggle.Parent = MainFrame
+local HeaderText = Instance.new("TextLabel")
+HeaderText.Size = UDim2.new(1, -80, 0, 60)
+HeaderText.Position = UDim2.new(0, 80, 0.5, -30)
+HeaderText.BackgroundTransparency = 1
+HeaderText.Font = Enum.Font.GothamBold
+HeaderText.TextSize = 22
+HeaderText.RichText = true
+HeaderText.TextColor3 = Color3.fromRGB(255, 255, 255)
+HeaderText.TextXAlignment = Enum.TextXAlignment.Left
+HeaderText.Text = string.format(
+	"<font color='rgb(0,255,255)'><b>%s</b></font> (<font color='rgb(100,255,255)'>%s</font>) ~ <font color='rgb(50,200,255)'>Xelo Library</font>",
+	Player.Name,
+	Player.DisplayName
+)
+HeaderText.Parent = Header
 
-	local Corner = Instance.new("UICorner", Toggle)
-	Corner.CornerRadius = UDim.new(0, 6)
+-- Tab Buttons Frame
+local TabButtons = Instance.new("Frame")
+TabButtons.Size = UDim2.new(1, 0, 0, 40)
+TabButtons.Position = UDim2.new(0, 0, 0, 70)
+TabButtons.BackgroundTransparency = 1
+TabButtons.Parent = MainFrame
 
-	local ToggleState = false
-	local LastToggle = 0
+local TabList = Instance.new("UIListLayout", TabButtons)
+TabList.FillDirection = Enum.FillDirection.Horizontal
+TabList.SortOrder = Enum.SortOrder.LayoutOrder
+TabList.Padding = UDim.new(0, 6)
 
-	Toggle.MouseEnter:Connect(function()
-		TweenService:Create(Toggle, TweenInfo.new(0.1), {
-			BackgroundColor3 = ToggleState and Color3.fromRGB(0, 170, 0):Lerp(Color3.fromRGB(180, 180, 180), 0.15)
-				or Color3.fromRGB(180, 0, 0):Lerp(Color3.fromRGB(180, 180, 180), 0.15)
-		}):Play()
-	end)
+-- Content Container
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Size = UDim2.new(1, -20, 1, -120)
+ContentContainer.Position = UDim2.new(0, 10, 0, 120)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.ClipsDescendants = true
+ContentContainer.Parent = MainFrame
 
-	Toggle.MouseLeave:Connect(function()
-		TweenService:Create(Toggle, TweenInfo.new(0.1), {
-			BackgroundColor3 = ToggleState and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(180, 0, 0)
-		}):Play()
-	end)
+function XeloLibrary:CreateTab(TabName, ProfileImageId)
+	local Tab = {}
+	local TabFrame = Instance.new("Frame")
+	TabFrame.Name = TabName
+	TabFrame.Size = UDim2.new(1, 0, 1, 0)
+	TabFrame.BackgroundTransparency = 1
+	TabFrame.Visible = false
+	TabFrame.Parent = ContentContainer
 
-	Toggle.MouseButton1Click:Connect(function()
-		if tick() - LastToggle < 0.2 then return end
-		LastToggle = tick()
+	local Layout = Instance.new("UIListLayout", TabFrame)
+	Layout.SortOrder = Enum.SortOrder.LayoutOrder
+	Layout.Padding = UDim.new(0, 10)
 
-		TweenService:Create(Toggle, TweenInfo.new(0.1), {
-			Size = UDim2.new(0, 250, 0, 36)
-		}):Play()
-		task.wait(0.1)
-		TweenService:Create(Toggle, TweenInfo.new(0.1), {
-			Size = UDim2.new(0, 260, 0, 40)
-		}):Play()
+	local Padding = Instance.new("UIPadding", TabFrame)
+	Padding.PaddingTop = UDim.new(0, 10)
 
-		ToggleState = not ToggleState
-
-		TweenService:Create(Toggle, TweenInfo.new(0.2), {
-			BackgroundColor3 = ToggleState and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(180, 0, 0)
-		}):Play()
-
-		Toggle.Text = ToggleState and "ON" or "OFF"
-		if Config.Callback then
-			task.defer(Config.Callback, ToggleState)
-		end
-	end)
-end
-
--- Create Button Function (no toggle)
-function XeloLibrary:CreateButton(Config)
 	local Button = Instance.new("TextButton")
-	Button.Name = Config.Name or "Button"
-	Button.Size = UDim2.new(0, 260, 0, 40)
-	Button.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-	Button.Text = Config.Name or "Button"
+	Button.Name = TabName .. "Tab"
+	Button.Text = TabName
+	Button.Size = UDim2.new(0, 120, 0, 36)
+	Button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 	Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-	Button.Font = Enum.Font.GothamSemibold
-	Button.TextSize = 20
+	Button.Font = Enum.Font.Gotham
+	Button.TextSize = 18
 	Button.AutoButtonColor = false
-	Button.Parent = MainFrame
+	Button.Parent = TabButtons
 
 	local Corner = Instance.new("UICorner", Button)
 	Corner.CornerRadius = UDim.new(0, 6)
 
-	Button.MouseEnter:Connect(function()
-		TweenService:Create(Button, TweenInfo.new(0.1), {
-			BackgroundColor3 = Color3.fromRGB(75, 75, 75)
-		}):Play()
-	end)
-
-	Button.MouseLeave:Connect(function()
-		TweenService:Create(Button, TweenInfo.new(0.1), {
-			BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-		}):Play()
-	end)
+	local ImageIcon
+	if ProfileImageId ~= 0 then
+		ImageIcon = Instance.new("ImageLabel")
+		ImageIcon.Size = UDim2.new(0, 24, 0, 24)
+		ImageIcon.Position = UDim2.new(0, 5, 0.5, -12)
+		ImageIcon.Image = "rbxthumb://type=Asset&id=" .. tostring(ProfileImageId) .. "&w=150&h=150"
+		ImageIcon.BackgroundTransparency = 1
+		ImageIcon.Parent = Button
+	end
 
 	Button.MouseButton1Click:Connect(function()
-		TweenService:Create(Button, TweenInfo.new(0.1), {
-			Size = UDim2.new(0, 250, 0, 36)
-		}):Play()
-		task.wait(0.1)
-		TweenService:Create(Button, TweenInfo.new(0.1), {
-			Size = UDim2.new(0, 260, 0, 40)
-		}):Play()
-
-		if Config.Callback then
-			task.defer(Config.Callback)
+		for _, TabInfo in pairs(Tabs) do
+			TabInfo.Frame.Visible = false
+			TabInfo.Button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 		end
+		TabFrame.Visible = true
+		Button.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 	end)
+
+	if #Tabs == 0 then
+		TabFrame.Visible = true
+		Button.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+	end
+
+	Tab.Frame = TabFrame
+	Tab.Button = Button
+	table.insert(Tabs, Tab)
+
+	-- Components
+	function Tab:CreateButton(Config)
+		local Btn = Instance.new("TextButton")
+		Btn.Size = UDim2.new(1, -20, 0, 40)
+		Btn.Text = Config.Name or "Button"
+		Btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+		Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		Btn.Font = Enum.Font.GothamSemibold
+		Btn.TextSize = 20
+		Btn.AutoButtonColor = false
+		Btn.Parent = TabFrame
+
+		local BtnCorner = Instance.new("UICorner", Btn)
+		BtnCorner.CornerRadius = UDim.new(0, 6)
+
+		Btn.MouseEnter:Connect(function()
+			TweenService:Create(Btn, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(75, 75, 75) }):Play()
+		end)
+
+		Btn.MouseLeave:Connect(function()
+			TweenService:Create(Btn, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(55, 55, 55) }):Play()
+		end)
+
+		Btn.MouseButton1Click:Connect(function()
+			TweenService:Create(Btn, TweenInfo.new(0.1), { Size = UDim2.new(1, -30, 0, 36) }):Play()
+			task.wait(0.1)
+			TweenService:Create(Btn, TweenInfo.new(0.1), { Size = UDim2.new(1, -20, 0, 40) }):Play()
+			if Config.Callback then
+				task.defer(Config.Callback)
+			end
+		end)
+	end
+
+	-- TODO: Add CreateToggle, CreateSlider, CreateDropdown, etc.
+
+	return Tab
 end
 
 return XeloLibrary
